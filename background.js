@@ -1,23 +1,27 @@
-import { scanError, scanSuccess, ScanError } from './popup.js';
-import { Hotp } from './dependencies/jsOTP.js';
-
+// import { scanError, scanSuccess, ScanError } from './popup.js';
+// import { Hotp } from './dependencies/jsOTP.js';
+// import { logout } from './signoutDuo.js';
+function sleep(millis){return new Promise(res=>setTimeout(res,millis))}
 const hotp = new Hotp();
 
+let isEnrolling = false;
+
 function browser() {
-    return { storage: {
-        local: {
-            async get(keys) {
-                return await new Promise((resolve, _) => {
-                    chrome.storage.local.get(keys, x => resolve(x));
-                });
-            },
-            async set(obj) {
-                await new Promise((resolve, _) => {
-                    chrome.storage.local.set(obj, resolve);
-                });
+    return {
+        storage: {
+            local: {
+                async get(keys) {
+                    return await new Promise((resolve, _) => {
+                        chrome.storage.local.get(keys, x => resolve(x));
+                    });
+                },
+                async set(obj) {
+                    await new Promise((resolve, _) => {
+                        chrome.storage.local.set(obj, resolve);
+                    });
+                }
             }
-        }
-    },
+        },
         tabs: {
             async query(attrs) {
                 return await new Promise((resolve, reject) => {
@@ -38,7 +42,9 @@ function browser() {
     }
 };
 
-export async function generateHOTP() {
+
+
+async function generateHOTP() {
     let storage = await browser().storage.local.get(["key", "count"]);
 
     if (Object.keys(storage).length == 0) {
@@ -54,13 +60,13 @@ export async function generateHOTP() {
     return [hotp.getOtp(key, count), count];
 }
 
-export async function processQR(QRLink) {
+async function processQR(QRLink) {
     const QRUrl = new URL(QRLink),
         query = new URLSearchParams(QRUrl.search),
         value = query.get("value"),
         data = decodeURIComponent(value),
         split = data.split("-");
-    
+
     if (!split) {
         return 1;
     }
@@ -87,9 +93,9 @@ export async function processQR(QRLink) {
     const key = await window.crypto.subtle.generateKey(
         {
             name: 'RSASSA-PKCS1-v1_5',
-            modulusLength: 2048, 
+            modulusLength: 2048,
             publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-            hash: { name: 'SHA-256' }, 
+            hash: { name: 'SHA-256' },
         },
         false,
         ['sign', 'verify']
@@ -143,16 +149,16 @@ export async function processQR(QRLink) {
         return;
     }
 
-    await browser().storage.local.set({"key": secret, "count": 0});
+    await browser().storage.local.set({ "key": secret, "count": 0 });
     scanSuccess();
 }
 
-export async function requestScan() {
-    let tabs = await browser().tabs.query({active: true});
+async function requestScan() {
+    let tabs = await browser().tabs.query({ active: true });
 
     for (let tab of tabs) {
         try {
-            let response = await browser().tabs.sendMessage(tab.id, {"request": "QR_REQUEST"});
+            let response = await browser().tabs.sendMessage(tab.id, { "request": "QR_REQUEST" });
             if (response.QRLink) {
                 processQR(response.QRLink);
             }
@@ -163,15 +169,80 @@ export async function requestScan() {
     }
 }
 
-export async function attemptAutofill(code) {
-    let tabs = await browser().tabs.query({active: true}); 
+async function attemptAutofill(code) {
+    let tabs = await browser().tabs.query({ active: true });
 
     for (let tab of tabs) {
         try {
-            let response = await browser().tabs.sendMessage(tab.id, {"request": "AUTOFILL", code});
+            let response = await browser().tabs.sendMessage(tab.id, { "request": "AUTOFILL", code });
             console.log(response);
         } catch (e) {
             console.error(e);
         }
     }
 }
+
+async function advanceEnroll() {
+    // await sleep(200)
+    let tabs = await browser().tabs.query({active:true});
+
+    for (let tab of tabs) {
+        try {
+            let response = await browser().tabs.sendMessage(tab.id, { "request": "ENROLL" });
+            console.log(response);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+}
+
+
+
+chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+    if (request == 'go') {
+        // sendResponse({response:'gotchaa'})
+        const hotpCode = await generateHOTP();
+
+        if (hotpCode === -1) {
+            if(isEnrolling) {advanceEnroll()}
+            return;
+        }
+
+        let [code, count] = hotpCode;
+
+        await attemptAutofill(code);
+
+    } else if (request=='scan') {
+        requestScan()
+    } else if(request=='setup') {
+        doSetup() 
+    } else if (request=='enrolled?') {
+        let storage = await browser().storage.local.get(["key", "count"]);
+
+        if (Object.keys(storage).length == 0) {
+            sendResponse(false)
+        } else {
+            sendResponse(true)
+        }
+    } else if(request=='finish'){
+        if(!isEnrolling) {return}
+        chrome.tabs.remove(sender.tab.id);
+        isEnrolling=false;
+    }
+});
+
+
+async function doSetup() {
+    isEnrolling=true;
+    await logout();
+    await chrome.storage.local.clear();
+}
+
+
+chrome.runtime.onInstalled.addListener(async function(details){
+    if(details.reason == "install"){
+       await doSetup()
+       await sleep(10)
+       chrome.tabs.create({url:'https://login.whitman.edu/login'})
+    }
+});

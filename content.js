@@ -21,6 +21,7 @@ function waitForElm(selector) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // try{
     if (message.request && message.request === "QR_REQUEST") {
         let qr = document.querySelector(".qr");
         qr = qr ? qr : document.querySelector("[data-testid='qr-code']");
@@ -84,7 +85,67 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({error: 2});
             return;
         } 
+    } else if(message.request && message.request == 'ENROLL'){
+        // alert('enrolling')
+        sendResponse('gotcha!');
+        (async()=>{
+
+            switch (document.location.pathname){
+                    
+                case '/frame/prompt': document.getElementById('new-device').click()
+                case '/frame/enroll/pre_flow_prompt':
+                    function waitForElm(selector) {
+                        return new Promise(resolve => {
+                            if (document.querySelector(selector)) {
+                                return resolve(document.querySelector(selector));
+                            }
+                    
+                            const observer = new MutationObserver(mutations => {
+                                if (document.querySelector(selector)) {
+                                    observer.disconnect();
+                                    resolve(document.querySelector(selector));
+                                }
+                            });
+                    
+                            // If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
+                            observer.observe(document.body, {
+                                childList: true,
+                                subtree: true
+                            });
+                        });
+                    }
+                    await waitForElm("input[value=tablet]")
+                    document.querySelector("input[value=tablet]").click()
+                    document.getElementById('continue').click()
+                case '/frame/enroll/flow':
+                    document.querySelector("input[value=tablet]").click()
+                    document.getElementById('continue').click()
+                case '/frame/enroll/enrollplatform':
+                    document.querySelector("input[value=Android]").click()
+                    document.getElementById('continue').click()
+                case '/frame/enroll/install_mobile_app':
+                    document.getElementById('duo-installed').click()
+                case '/frame/enroll/mobile_activate':
+                    await sleep(100)
+                    chrome.runtime.sendMessage('scan')
+                    await sleep(1000)
+                    //qr request and then click continue
+                    document.getElementById('continue').click()
+        
+    }
+
+    })()
+
     } else {
         sendResponse({error: 1});
     }
+// }catch(e){
+//     sendResponse({yes:'yues!',error:e});
+// }
 })
+
+function sleep(millis){return new Promise(res=>setTimeout(res,millis))}
+
+
+chrome.runtime.sendMessage('go')
+if(location.pathname=='/frame/enroll/finish'){chrome.runtime.sendMessage('finish');}

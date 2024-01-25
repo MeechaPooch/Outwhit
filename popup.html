@@ -11,10 +11,45 @@
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet"> 
   </head>
   <body>
-    <header class="main-div">
 
-      
-      <div class="real-body">
+    <header class="main-div" >
+
+
+      <div class="containerdiv">
+        <titlew>Whittie Duo Duper</titlew>
+        <subtitlew>Automatic Authenticator by Whitman Students</subtitlew>
+
+<notenrolled id="notenrolled" style="display:none">
+        <button class="setupButton" id="butnn"><div>Click To Setup</div><div class="lilbuttontext">will force re-login</div></button>
+  <subtitlen></subtitlen>
+
+
+    
+
+
+
+
+    </notenrolled>
+
+    <enrolled id="enrolled" style="display:none">
+
+      <!-- <checkmark>✅</checkmark> -->
+      <img src="assets/images/check.svg">
+      <subtitlec>Youre all set up</subtitlec>
+
+      <br>
+      <button class="resetup">Click to re-register if something goes wrong</button>
+
+
+    </enrolled>
+    
+      <div class="links">
+        <a href="" id="donate" class="link">$ donate $</a><a id="about" class="link">info</a>
+      </div>
+    <img src="assets/images/duoduper.png" height=40 width="200">
+
+
+      <div class="real-body" style="display:none;">
         <div class="title-div">
           <h1 id="title-h1">Duo Extension</h1>
         </div>
@@ -23,7 +58,11 @@
             <img src="./assets/images/loading.svg" class="loading-img"></img>
             
           </div>
+          
           <button class="setup-instr-button">Setup Instructions</button>
+          <br>
+          <br>
+          <button class="setup-button">Logout<br>Duo</button>
           <!-- <br>
           <button class="mode-toggle-button">Switch to Duo Universal</button>
           <br> -->
@@ -48,5 +87,6 @@
     </header>
 
     <script type="module" src="popup.js"></script>
+    <script type="module" src="signoutDuo.js"></script>
   </body>
 </html>

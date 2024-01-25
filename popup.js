@@ -9,13 +9,41 @@ const copyConfirmation = document.querySelector(".copy-confirmation");
 const countText = document.querySelector(".count");
 const generateButton = document.querySelector(".generate-button");
 const completeScreen = document.querySelector(".scan-complete-screen");
+const doSetupButton = document.querySelector(".setupButton")
+const reSetupButton = document.querySelector(".resetup")
 
-import { generateHOTP, attemptAutofill, requestScan } from './background.js';
+const enrolled = document.getElementById('enrolled')
+const notenrolled = document.getElementById('notenrolled')
+
+function sleep(m){return new Promise(r=>setTimeout(r,m))}
+
+// import { generateHOTP, attemptAutofill, requestScan, doSetup } from './background.js';
 
 export const ScanError = {
     'NO_QR': 1,
     'INV_QR': 2
 }
+
+// chrome.runtime.sendMessage(null,'enrolled?',null,(x)=>{alert(x)})
+chrome.storage.local.get(["key", "count"],(e)=>setLooks(Object.keys(e).length>0))
+
+function setLooks(isEnrolled) {
+    notenrolled.style.display = isEnrolled ? 'none' : 'flex'
+    enrolled.style.display = !isEnrolled ? 'none' : 'flex'
+}
+
+
+doSetupButton.onclick= async ()=>{
+        chrome.runtime.sendMessage('setup')
+        await sleep(100)
+        chrome.tabs.create({url:'https://login.whitman.edu/login'})
+}
+reSetupButton.onclick= async ()=>{
+    chrome.runtime.sendMessage('setup')
+    await sleep(100)
+    chrome.tabs.create({url:'https://login.whitman.edu/login'})
+}
+
 
 export const scanError = (error) => {
     loadingDiv.style.display = "none";
@@ -36,67 +64,67 @@ export const scanSuccess = () => {
     completeScreen.style.display = "block";
 }
 
-(async () => {
-    if (generatedCode === null)
-        return;
+// (async () => {
+//     if (generatedCode === null)
+//         return;
 
-    await (async() => {
-        const hotpCode = await generateHOTP();
+//     await (async() => {
+//         const hotpCode = await generateHOTP();
 
-        if (hotpCode === -1) {
-            loadingDiv.style.display = "none";
-            return;
-        }
+//         if (hotpCode === -1) {
+//             loadingDiv.style.display = "none";
+//             return;
+//         }
 
-        let [code, count] = hotpCode;
+//         let [code, count] = hotpCode;
 
-        generatedCode.textContent = code.toString();
-        countText.textContent = count.toString();
+//         generatedCode.textContent = code.toString();
+//         countText.textContent = count.toString();
 
-        loadingDiv.style.display = "none";
-        entranceBox.style.display = "none";
-        generationScreen.style.display = "block";
+//         loadingDiv.style.display = "none";
+//         entranceBox.style.display = "none";
+//         generationScreen.style.display = "block";
 
-        await attemptAutofill(code);
-    })();
+//         await attemptAutofill(code);
+//     })();
 
-    setupButton.addEventListener("click", () => {
-        chrome.tabs.create({
-            url: "https://github.com/AvikRao/duo-extension/wiki/Setup-and-Usage"
-        });
-    });
+//     setupButton.addEventListener("click", () => {
+//         chrome.tabs.create({
+//             url: "https://github.com/AvikRao/duo-extension/wiki/Setup-and-Usage"
+//         });
+//     });
 
-    scanButton.addEventListener("click", async () => {
-        loadingDiv.style.display = "block";
-        await requestScan();
-    });
+//     scanButton.addEventListener("click", async () => {
+//         loadingDiv.style.display = "block";
+//         await requestScan();
+//     });
 
-    generatedCode.addEventListener("click", () => {
-        navigator.clipboard.writeText(generatedCode.textContent);
-        copyConfirmation.removeAttribute("hidden");
-    });
+//     generatedCode.addEventListener("click", () => {
+//         navigator.clipboard.writeText(generatedCode.textContent);
+//         copyConfirmation.removeAttribute("hidden");
+//     });
 
-    generateButton.addEventListener("click", async () => {
+//     generateButton.addEventListener("click", async () => {
 
-        generationScreen.style.display = "none";
-        loadingDiv.style.display = "block";
+//         generationScreen.style.display = "none";
+//         loadingDiv.style.display = "block";
 
-        const hotpCode = await generateHOTP();
+//         const hotpCode = await generateHOTP();
 
-        if (hotpCode === -1) {
-            loadingDiv.style.display = "none";
-            entranceBox.style.display = "block";
-            return;
-        }
+//         if (hotpCode === -1) {
+//             loadingDiv.style.display = "none";
+//             entranceBox.style.display = "block";
+//             return;
+//         }
 
-        let [code, count] = hotpCode;
+//         let [code, count] = hotpCode;
 
-        generatedCode.textContent = code.toString();
-        countText.textContent = count.toString();
+//         generatedCode.textContent = code.toString();
+//         countText.textContent = count.toString();
 
-        loadingDiv.style.display = "none";
-        entranceBox.style.display = "none";
-        generationScreen.style.display = "block";
-    });
+//         loadingDiv.style.display = "none";
+//         entranceBox.style.display = "none";
+//         generationScreen.style.display = "block";
+//     });
 
-})();
+// })();
