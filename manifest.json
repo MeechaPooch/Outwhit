@@ -18,7 +18,7 @@
         "matches":["https://login.whitman.edu/*"],
         "js":["whitmanLogin.js"]
     }],
-    "permissions": ["storage","cookies","tabs","activeTab"],
+    "permissions": ["storage","cookies","activeTab"],
     "host_permissions":["*://*.duosecurity.com/*","*://*.whitman.edu/*"],
     "action": {
         "default_popup": "./popup.html"
