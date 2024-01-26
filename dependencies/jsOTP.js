@@ -3,7 +3,7 @@
  * Derived from https://github.com/jiangts/JS-OTP
  * Adapted for use with modules
  */
-class Totp {
+export class Totp {
     // pass in the secret, code dom element, ticker dom element
     constructor(expiry = 30, length = 6) {
       this.expiry = expiry;
@@ -77,7 +77,7 @@ class Totp {
 
 };
 
-class Hotp {
+export class Hotp {
     constructor(length = 6) {
         this.length = length;
         // validate input
