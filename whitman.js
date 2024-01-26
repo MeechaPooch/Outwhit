@@ -1,0 +1,1 @@
+document.querySelector('.card-img-top').click()

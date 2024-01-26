@@ -1,5 +1,5 @@
 {
-    "name": "Duo Passcode Generator",
+    "name": "Whittie Duo Duper",
     "description": "Generates HOTP Passcodes for Duo Security Multi-Factor Authentication",
     "version": "2.0.0",
     "manifest_version": 3,
@@ -20,20 +20,13 @@
     }],
     "permissions": ["storage","cookies","tabs","activeTab"],
     "host_permissions":["*://*.duosecurity.com/*","*://*.whitman.edu/*"],
-    "browser_action": {
+    "action": {
         "default_popup": "./popup.html"
     },
     "icons": {
         "16": "./assets/icons/icon16.png",
         "48": "./assets/icons/icon48.png",
         "128": "./assets/icons/icon128.png"
-    },
-    "commands": {
-        "_execute_browser_action": {
-            "suggested_key": {
-                "default": "Alt+Shift+D"
-            }
-        }
     },
     "applications": {
         "gecko": {
