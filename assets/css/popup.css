@@ -31,6 +31,9 @@ html {
 #about:hover{
     border-color:rgb(0, 39, 215);
 }
+.buton{
+    cursor: pointer;;
+}
 
 .links{
     display: flex;
@@ -58,12 +61,17 @@ html {
     /* flex-grow: 1; */
     justify-self: stretch;
     font-size: 13px;
-    border-radius: 10px;
+    border-radius: 13px;
     background-color:rgb(255, 202, 198);
     color:rgb(0, 0, 0);
     border: rgb(255, 223, 221) 3px solid;
     transition: 0.2s;
-    padding: 2px;
+    --lrp: 10px;
+    --tbp:4px;
+    padding-left: var(--lrp);
+    padding-right: var(--lrp);
+    padding-top: var(--tbp);
+    padding-bottom: var(--tbp);
 }
 .link:hover{
     border-color:rgb(231, 80, 80);
