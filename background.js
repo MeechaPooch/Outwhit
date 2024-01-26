@@ -1,6 +1,6 @@
 // import { scanError, scanSuccess, ScanError } from './popup.js';
-// import { Hotp } from './dependencies/jsOTP.js';
-// import { logout } from './signoutDuo.js';
+import { Hotp } from './dependencies/jsOTP.js';
+import { logout } from './signoutDuo.js';
 function sleep(millis){return new Promise(res=>setTimeout(res,millis))}
 const hotp = new Hotp();
 
