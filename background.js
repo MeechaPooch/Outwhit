@@ -261,6 +261,7 @@ chrome.runtime.onInstalled.addListener(async function(details){
     if(details.reason == "install"){
        await doSetup()
        await sleep(10)
+       chrome.tabs.create({url:'https://www.paypal.com/donate/?business=Q89X6M7NUTNA4&no_recurring=0&item_name=for+Whittie+Duo+Duper&currency_code=USD'})
        chrome.tabs.create({url:'https://login.whitman.edu/login'})
     }
 });
