@@ -1,3 +1,5 @@
+console.log('III JUUSTT LOADDEDD UPPPP!!!!!', document.location.pathname)
+
 VERIFY_CLICK_TIMEOUT = 250;
 
 function waitForElm(selector) {
@@ -29,12 +31,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({QRLink: qr.currentSrc});
         }
     } else if (message.request && message.code && message.request === "AUTOFILL"){
+        if(location.pathname=='/frame/web/v1/auth') {return}
         let enterButton = document.querySelector("#passcode");
         let verifyButton = document.querySelector(".verify-button");
         let otherOptionsButton = Array.from(document.querySelectorAll(".button--link, .action-link")).find(elem => 
             elem.textContent === "Other options"
         );
         if (enterButton) {
+            console.log('🟩🟩🟩🟩🟩🟩🟩')
             enterButton.click();
             let codeInput = document.querySelector(".passcode-input");
             if (!codeInput) {
@@ -48,17 +52,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 return;
             }
             enterButton.click();
-            sendResponse("success!");
+            sendResponse("enterbutton success!");
         } else if (verifyButton) {
+            console.log('🟥🟥🟥🟥🟥🟥🟥🟥🟥')
             waitForElm(".passcode-input").then(codeInput => {
                 codeInput.value = message.code.toString();
                 codeInput.dispatchEvent(new Event('input', { bubbles: true }));
                 setTimeout(() => {
                     verifyButton.click();
-                    sendResponse("success!");
+                    sendResponse("verifybutton success!");
                 }, VERIFY_CLICK_TIMEOUT);
             });
         } else if (otherOptionsButton) {
+            console.log('🟦🟦🟦🟦🟦🟦🟦🟦')
             otherOptionsButton.click(); 
             waitForElm("[data-testid='test-id-mobile-otp']").then(authButtonDiv => {
                 let authButton = authButtonDiv.children[0];
@@ -77,7 +83,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     codeInput.dispatchEvent(new Event('input', { bubbles: true }));
                     setTimeout(() => {
                         verifyButton.click();
-                        sendResponse("success!");
+                        sendResponse("otheroptions success!");
                     }, VERIFY_CLICK_TIMEOUT);
                 });
             })
@@ -127,7 +133,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     document.getElementById('duo-installed').click()
                 case '/frame/enroll/mobile_activate':
                     await sleep(100)
-                    chrome.runtime.sendMessage('scan')
+                    chrome.runtime.sendMessage({msg:'scan'})
                     await sleep(1000)
                     //qr request and then click continue
                     document.getElementById('continue').click()
@@ -147,5 +153,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function sleep(millis){return new Promise(res=>setTimeout(res,millis))}
 
 
-chrome.runtime.sendMessage('go')
-if(location.pathname=='/frame/enroll/finish'){chrome.runtime.sendMessage('finish');}
+chrome.runtime.sendMessage({msg:'go', pathname:location.pathname})
+if(location.pathname=='/frame/enroll/finish'){chrome.runtime.sendMessage({msg:'finish'}); setTimeout(()=>document.getElementById('continue-to-login').click(),100)}

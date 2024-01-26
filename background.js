@@ -53,11 +53,21 @@ async function generateHOTP() {
 
     let { key, count } = storage;
 
+    return [hotp.getOtp(key, count), count];
+}
+async function incrementCount(label) {
+    let storage = await browser().storage.local.get(["key", "count"]);
+
+    if (Object.keys(storage).length == 0) {
+        return -1;
+    }
+
+    let { key, count } = storage;
+    console.log('count inc: ',label,count)
+
     count++;
 
     browser().storage.local.set({ count });
-
-    return [hotp.getOtp(key, count), count];
 }
 
 async function processQR(QRLink) {
@@ -90,7 +100,7 @@ async function processQR(QRLink) {
      * Authorization public key generation
      * https://stackoverflow.com/a/55188241
      */
-    const key = await window.crypto.subtle.generateKey(
+    const key = await crypto.subtle.generateKey(
         {
             name: 'RSASSA-PKCS1-v1_5',
             modulusLength: 2048,
@@ -100,9 +110,8 @@ async function processQR(QRLink) {
         false,
         ['sign', 'verify']
     );
-    const publicKey = await window.crypto.subtle.exportKey('spki', key.publicKey);
-    const keyBody = window
-        .btoa(
+    const publicKey = await crypto.subtle.exportKey('spki', key.publicKey);
+    const keyBody = btoa(
             String.fromCharCode(...new Uint8Array(publicKey))
         )
         .match(/.{1,64}/g)
@@ -150,7 +159,6 @@ async function processQR(QRLink) {
     }
 
     await browser().storage.local.set({ "key": secret, "count": 0 });
-    scanSuccess();
 }
 
 async function requestScan() {
@@ -175,6 +183,7 @@ async function attemptAutofill(code) {
     for (let tab of tabs) {
         try {
             let response = await browser().tabs.sendMessage(tab.id, { "request": "AUTOFILL", code });
+            if(!response?.error) {incrementCount(response)} //then advance count
             console.log(response);
         } catch (e) {
             console.error(e);
@@ -199,24 +208,31 @@ async function advanceEnroll() {
 
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-    if (request == 'go') {
+    if (request.msg == 'go') {
         // sendResponse({response:'gotchaa'})
         const hotpCode = await generateHOTP();
 
         if (hotpCode === -1) {
-            if(isEnrolling) {advanceEnroll()}
+            if(isEnrolling){advanceEnroll()}
+            return;
+        }
+        
+        let [code, count] = hotpCode;
+
+        if( count > 120 && request.pathname != '/frame/enroll/pre_flow_prompt') {
+            advanceEnroll()
             return;
         }
 
-        let [code, count] = hotpCode;
+
 
         await attemptAutofill(code);
 
-    } else if (request=='scan') {
+    } else if (request.msg=='scan') {
         requestScan()
-    } else if(request=='setup') {
+    } else if(request.msg=='setup') {
         doSetup() 
-    } else if (request=='enrolled?') {
+    } else if (request.msg=='enrolled?') {
         let storage = await browser().storage.local.get(["key", "count"]);
 
         if (Object.keys(storage).length == 0) {
@@ -224,7 +240,7 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
         } else {
             sendResponse(true)
         }
-    } else if(request=='finish'){
+    } else if(request.msg=='finish'){
         if(!isEnrolling) {return}
         chrome.tabs.remove(sender.tab.id);
         isEnrolling=false;
@@ -236,7 +252,9 @@ async function doSetup() {
     isEnrolling=true;
     await logout();
     await chrome.storage.local.clear();
+    await fetch('https://login.whitman.edu/logout')
 }
+
 
 
 chrome.runtime.onInstalled.addListener(async function(details){
