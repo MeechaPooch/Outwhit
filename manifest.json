@@ -1,18 +1,17 @@
 {
     "name": "Whittie Duo Duper",
     "description": "Generates HOTP Passcodes for Duo Security Multi-Factor Authentication",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "manifest_version": 3,
     "background": {
-        "service_worker": "background.js",
-        "type": "module"
+        "scripts": ["background.js"]
     },
     "content_scripts": [{
         "matches": [ "*://*.duosecurity.com/*" ],
         "js": ["content.js"],
         "all_frames": true
     },{
-        "matches":["https://www.whitman.edu/canvas*"],
+        "matches":["https://www.whitman.edu/canvas/*"],
         "js":["whitman.js"]
     },{
         "matches":["https://login.whitman.edu/*"],
