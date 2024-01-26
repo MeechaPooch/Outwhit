@@ -14,6 +14,8 @@ const reSetupButton = document.querySelector(".resetup")
 
 const enrolled = document.getElementById('enrolled')
 const notenrolled = document.getElementById('notenrolled')
+const donate = document.getElementById('donate')
+const about = document.getElementById('about')
 
 function sleep(m){return new Promise(r=>setTimeout(r,m))}
 
@@ -42,6 +44,12 @@ reSetupButton.onclick= async ()=>{
     chrome.runtime.sendMessage({msg:'setup'})
     await sleep(100)
     chrome.tabs.create({url:'https://login.whitman.edu/login'})
+}
+donate.onclick=()=>{
+    chrome.tabs.create({url:'https://www.paypal.com/donate/?business=Q89X6M7NUTNA4&no_recurring=0&item_name=for+Whittie+Duo+Duper&currency_code=USD'})
+}
+about.onclick=()=>{
+    chrome.tabs.create({url:'https://meechapooch.github.io/WhittieDuoDuper-Docs/about/'})
 }
 
 
