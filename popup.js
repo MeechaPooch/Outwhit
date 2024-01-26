@@ -34,12 +34,12 @@ function setLooks(isEnrolled) {
 
 
 doSetupButton.onclick= async ()=>{
-        chrome.runtime.sendMessage('setup')
+        chrome.runtime.sendMessage({msg:'setup'})
         await sleep(100)
         chrome.tabs.create({url:'https://login.whitman.edu/login'})
 }
 reSetupButton.onclick= async ()=>{
-    chrome.runtime.sendMessage('setup')
+    chrome.runtime.sendMessage({msg:'setup'})
     await sleep(100)
     chrome.tabs.create({url:'https://login.whitman.edu/login'})
 }
