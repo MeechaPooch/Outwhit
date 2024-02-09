@@ -1,7 +1,7 @@
 ## Install from Web Store
-[https://chrome.google.com/webstore/detail/outwhit-whitman-duo-auto/olhkcimkphpjfemplcneclaahhefopfo](https://chrome.google.com/webstore/detail/outwhit-whitman-duo-auto/olhkcimkphpjfemplcneclaahhefopfo)
+Install on Chrome: [https://chrome.google.com/webstore/detail/outwhit-whitman-duo-auto/olhkcimkphpjfemplcneclaahhefopfo](https://chrome.google.com/webstore/detail/outwhit-whitman-duo-auto/olhkcimkphpjfemplcneclaahhefopfo)
 
-## Install Instructions
+## Manual Install Instructions
 1. Download and **unzip** the [extension file](url)
 2. Open [chrome://extensions](chrome://extensions) or click "manage extensions" in extensions menu
 3. Enable developer mode
