@@ -1,10 +1,47 @@
 // import { scanError, scanSuccess, ScanError } from './popup.js';
 import { Hotp } from './dependencies/jsOTP.js';
 import { logout } from './signoutDuo.js';
-function sleep(millis){return new Promise(res=>setTimeout(res,millis))}
+import './extpay.js'
+function sleep(millis) { return new Promise(res => setTimeout(res, millis)) }
 const hotp = new Hotp();
 
-let isEnrolling = false;
+
+
+/// paid 
+
+// Example code
+// your-extension/background.js
+const extpay = ExtPay('outwhit');
+extpay.startBackground();
+
+extpay.getUser().then(user => {
+    if (user.paid) {
+        // ...
+    } else {
+        extpay.openPaymentPage()
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function setIsEnrolling(state) {
+    return browser().storage.local.set({ isEnrolling: state })
+}
+async function getIsEnrolling() {
+    return (await browser().storage.local.get(['isEnrolling'])).isEnrolling
+}
 
 function browser() {
     return {
@@ -63,7 +100,7 @@ async function incrementCount(label) {
     }
 
     let { key, count } = storage;
-    console.log('count inc: ',label,count)
+    console.log('count inc: ', label, count)
 
     count++;
 
@@ -112,8 +149,8 @@ async function processQR(QRLink) {
     );
     const publicKey = await crypto.subtle.exportKey('spki', key.publicKey);
     const keyBody = btoa(
-            String.fromCharCode(...new Uint8Array(publicKey))
-        )
+        String.fromCharCode(...new Uint8Array(publicKey))
+    )
         .match(/.{1,64}/g)
         .join('\n');
 
@@ -161,10 +198,10 @@ async function processQR(QRLink) {
     await browser().storage.local.set({ "key": secret, "count": 0 });
 }
 
-async function requestScan() {
-    let tabs = await browser().tabs.query({ active: true });
+async function requestScan(tab) {
+    // let tabs = await browser().tabs.query({ active: true });
 
-    for (let tab of tabs) {
+    // for (let tab of tabs) {
         try {
             let response = await browser().tabs.sendMessage(tab.id, { "request": "QR_REQUEST" });
             if (response.QRLink) {
@@ -174,94 +211,94 @@ async function requestScan() {
             console.error("scan error: ", e);
             setTimeout(() => scanError(ScanError.NO_QR), 2000);
         }
-    }
+    // }
 }
 
-async function attemptAutofill(code) {
-    let tabs = await browser().tabs.query({ active: true });
+async function attemptAutofill(code,tab) {
 
-    for (let tab of tabs) {
+    // let tabs = [tab,...(await browser().tabs.query({ active: true }))];
+
+    // for (let tab of tabs) {
         try {
             let response = await browser().tabs.sendMessage(tab.id, { "request": "AUTOFILL", code });
-            if(!response?.error) {incrementCount(response)} //then advance count
+            if (!response?.error) { incrementCount(response) } //then advance count
             console.log(response);
         } catch (e) {
             console.error(e);
         }
-    }
+    // }
 }
 
-async function advanceEnroll() {
-    // await sleep(200)
-    let tabs = await browser().tabs.query({active:true});
+async function advanceEnroll(tab) {
 
-    for (let tab of tabs) {
-        try {
-            let response = await browser().tabs.sendMessage(tab.id, { "request": "ENROLL" });
-            console.log(response);
-        } catch (e) {
-            console.error(e);
-        }
-    }
+    try{let response = await browser().tabs.sendMessage(tab.id, { "request": "ENROLL" });}
+    catch(e){console.error(e)}
+
 }
 
 
 
-chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-    if (request.msg == 'go') {
-        // sendResponse({response:'gotchaa'})
-        const hotpCode = await generateHOTP();
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    let tab = sender.tab;
+    ;
+        (async () => {
+            if (request.msg == 'go') {
+                // sendResponse({response:'gotchaa'})
+                const hotpCode = await generateHOTP();
 
-        if (hotpCode === -1) {
-            if(isEnrolling){advanceEnroll()}
-            return;
-        }
-        
-        let [code, count] = hotpCode;
+                if (hotpCode === -1) {
+                    if (await getIsEnrolling()) { advanceEnroll(tab) }
+                    return;
+                }
 
-        if( count > 120 && request.pathname != '/frame/enroll/pre_flow_prompt') {
-            advanceEnroll()
-            return;
-        }
+                let [code, count] = hotpCode;
+
+                if (count > 120 && request.pathname != '/frame/enroll/pre_flow_prompt') {
+                    advanceEnroll(tab)
+                    return;
+                }
 
 
 
-        await attemptAutofill(code);
+                await attemptAutofill(code,tab);
 
-    } else if (request.msg=='scan') {
-        requestScan()
-    } else if(request.msg=='setup') {
-        doSetup() 
-    } else if (request.msg=='enrolled?') {
-        let storage = await browser().storage.local.get(["key", "count"]);
+            } else if (request.msg == 'scan') {
+                requestScan(tab)
+            } else if (request.msg == 'setup') {
+                doSetup()
+            } else if (request.msg == 'enrolled?') {
+                let storage = await browser().storage.local.get(["key", "count"]);
 
-        if (Object.keys(storage).length == 0) {
-            sendResponse(false)
-        } else {
-            sendResponse(true)
-        }
-    } else if(request.msg=='finish'){
-        if(!isEnrolling) {return}
-        chrome.tabs.remove(sender.tab.id);
-        isEnrolling=false;
-    }
+                if (Object.keys(storage).length == 0) {
+                    sendResponse(false)
+                } else {
+                    sendResponse(true)
+                }
+            } else if (request.msg == 'finish') {
+                if (!await getIsEnrolling()) { return }
+                chrome.tabs.remove(sender.tab.id);
+                await setIsEnrolling(false)
+            } else if (request.msg == 'settingUp?') {
+                sendResponse(await getIsEnrolling())
+            }
+        })();
+    return true;
 });
 
 
 async function doSetup() {
-    isEnrolling=true;
     await logout();
     await chrome.storage.local.clear();
-    await fetch('https://login.whitman.edu/logout')
+    await setIsEnrolling(true)
 }
 
 
 
-chrome.runtime.onInstalled.addListener(async function(details){
-    if(details.reason == "install"){
-       await doSetup()
-       await sleep(10)
-       chrome.tabs.create({url:'https://www.paypal.com/donate/?business=Q89X6M7NUTNA4&no_recurring=0&item_name=for+Whittie+Duo+Duper&currency_code=USD'})
-       chrome.tabs.create({url:'https://login.whitman.edu/login'})
+chrome.runtime.onInstalled.addListener(async function (details) {
+    if (details.reason == "install") {
+        await doSetup()
+        await sleep(10)
+        chrome.tabs.create({ url: 'https://www.paypal.com/donate/?business=Q89X6M7NUTNA4&no_recurring=0&item_name=for+Whittie+Duo+Duper&currency_code=USD' })
+        chrome.tabs.create({ url: 'https://login.whitman.edu/login' })
     }
 });
